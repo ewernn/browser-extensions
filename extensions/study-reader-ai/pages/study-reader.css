@@ -43,18 +43,20 @@ button {
   font-size: 14px;
 }
 
-#settingsBtn {
-  padding: 8px;
-  font-size: 18px;
-  background: none;
+#settingsBtn, #toggleEditor {
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: bold;
+  background: rgba(0,0,0,0.15);
+  min-width: 36px;
 }
 
-#settingsBtn:hover {
-  background: rgba(0,0,0,0.1);
+#settingsBtn:hover, #toggleEditor:hover {
+  background: rgba(0,0,0,0.25);
 }
 
-body.dark #settingsBtn:hover {
-  background: rgba(255,255,255,0.1);
+body.dark #settingsBtn:hover, body.dark #toggleEditor:hover {
+  background: rgba(255,255,255,0.2);
 }
 
 body.dark button {

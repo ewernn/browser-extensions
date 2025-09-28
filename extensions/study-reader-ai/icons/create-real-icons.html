@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate Real PNG Icons</title>
+</head>
+<body style="font-family: sans-serif; padding: 20px;">
+  <h2>Generate PNG Icons for Study Reader</h2>
+  <p>Right-click each icon and "Save Image As..." to replace the existing icon files:</p>
+
+  <div style="margin: 20px 0;">
+    <h3>icon-48.png</h3>
+    <canvas id="icon48" width="48" height="48" style="border: 1px solid #ccc; image-rendering: crisp-edges;"></canvas>
+  </div>
+
+  <div style="margin: 20px 0;">
+    <h3>icon-96.png</h3>
+    <canvas id="icon96" width="96" height="96" style="border: 1px solid #ccc; image-rendering: crisp-edges;"></canvas>
+  </div>
+
+  <script>
+    function drawIcon(canvasId, size) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+
+      // Green gradient background
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#4CAF50');
+      gradient.addColorStop(1, '#45a049');
+      ctx.fillStyle = gradient;
+
+      // Rounded rectangle
+      const radius = size * 0.15;
+      ctx.beginPath();
+      ctx.moveTo(radius, 0);
+      ctx.lineTo(size - radius, 0);
+      ctx.quadraticCurveTo(size, 0, size, radius);
+      ctx.lineTo(size, size - radius);
+      ctx.quadraticCurveTo(size, size, size - radius, size);
+      ctx.lineTo(radius, size);
+      ctx.quadraticCurveTo(0, size, 0, size - radius);
+      ctx.lineTo(0, radius);
+      ctx.quadraticCurveTo(0, 0, radius, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // Draw book shape
+      ctx.fillStyle = 'white';
+      const bookWidth = size * 0.5;
+      const bookHeight = size * 0.6;
+      const x = (size - bookWidth) / 2;
+      const y = (size - bookHeight) / 2;
+
+      // Book pages
+      ctx.fillRect(x + bookWidth * 0.1, y, bookWidth * 0.9, bookHeight);
+
+      // Book cover
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillRect(x, y + bookHeight * 0.05, bookWidth * 0.9, bookHeight * 0.95);
+
+      // Book spine
+      ctx.fillStyle = 'white';
+      ctx.fillRect(x, y + bookHeight * 0.05, bookWidth * 0.15, bookHeight * 0.95);
+
+      // AI sparkle in corner
+      ctx.fillStyle = '#FFD700';
+      ctx.beginPath();
+      ctx.arc(size * 0.75, size * 0.25, size * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    drawIcon('icon48', 48);
+    drawIcon('icon96', 96);
+  </script>
+</body>
+</html>
