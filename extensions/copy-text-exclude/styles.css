@@ -1,0 +1,37 @@
+/* Force text selection in exclude mode */
+.exclude-mode-active,
+.exclude-mode-active * {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  user-select: text !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+  cursor: text !important;
+}
+
+/* Prevent clicking and dragging on interactive elements */
+.exclude-mode-active a,
+.exclude-mode-active button,
+.exclude-mode-active input,
+.exclude-mode-active img,
+.exclude-mode-active video {
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+  pointer-events: none !important;
+}
+
+/* But keep text selectable */
+.exclude-mode-active a *,
+.exclude-mode-active button * {
+  pointer-events: none !important;
+}
+
+.excluded-text {
+  text-decoration: line-through !important;
+  opacity: 0.5 !important;
+  background: rgba(255, 0, 0, 0.2) !important;
+}
+
+body {
+  transition: border 0.2s ease;
+}

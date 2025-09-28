@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+function generateIcon(size) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  
+  // Background
+  ctx.fillStyle = '#4CAF50';
+  ctx.fillRect(0, 0, size, size);
+  
+  // Text
+  ctx.fillStyle = 'white';
+  ctx.font = `${size * 0.5}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('📚', size/2, size/2);
+  
+  // Download
+  const link = document.createElement('a');
+  link.download = `icon-${size}.png`;
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+window.onload = () => {
+  generateIcon(48);
+  generateIcon(96);
+  document.body.innerHTML = 'Icons downloaded! Copy icon-48.png and icon-96.png to the icons folder.';
+}
+</script>
+</head>
+<body>Generating icons...</body>
+</html>

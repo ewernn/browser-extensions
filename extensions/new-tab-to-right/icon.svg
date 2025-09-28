@@ -1,0 +1,18 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tab shape with right arrow -->
+  <g>
+    <!-- Tab background -->
+    <path d="M 20 40 L 30 30 L 90 30 L 100 40 L 100 80 L 20 80 Z" 
+          fill="#87CEEB" 
+          stroke="#5BA8D3" 
+          stroke-width="2"/>
+    
+    <!-- Right arrow -->
+    <path d="M 55 55 L 70 55 L 70 48 L 85 60 L 70 72 L 70 65 L 55 65 Z" 
+          fill="white"/>
+    
+    <!-- Plus sign -->
+    <path d="M 35 50 L 45 50 L 45 40 L 50 40 L 50 50 L 60 50 L 60 55 L 50 55 L 50 65 L 45 65 L 45 55 L 35 55 Z" 
+          fill="white"/>
+  </g>
+</svg>

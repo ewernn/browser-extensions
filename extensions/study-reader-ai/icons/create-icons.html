@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Icon Generator</title>
+</head>
+<body>
+  <h2>Icon Generator for Study Reader Extension</h2>
+  <p>Right-click each icon and save as PNG to replace the placeholder files:</p>
+
+  <div>
+    <h3>icon-48.png (48x48)</h3>
+    <canvas id="icon48" width="48" height="48" style="border: 1px solid #ccc;"></canvas>
+  </div>
+
+  <div>
+    <h3>icon-96.png (96x96)</h3>
+    <canvas id="icon96" width="96" height="96" style="border: 1px solid #ccc;"></canvas>
+  </div>
+
+  <script>
+    function drawIcon(canvasId, size) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+
+      // Green background with rounded corners
+      ctx.fillStyle = '#4CAF50';
+      const radius = size * 0.15;
+      ctx.beginPath();
+      ctx.moveTo(radius, 0);
+      ctx.lineTo(size - radius, 0);
+      ctx.quadraticCurveTo(size, 0, size, radius);
+      ctx.lineTo(size, size - radius);
+      ctx.quadraticCurveTo(size, size, size - radius, size);
+      ctx.lineTo(radius, size);
+      ctx.quadraticCurveTo(0, size, 0, size - radius);
+      ctx.lineTo(0, radius);
+      ctx.quadraticCurveTo(0, 0, radius, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // White book emoji
+      ctx.font = `${size * 0.6}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'white';
+      ctx.fillText('📚', size/2, size/2 + 2);
+    }
+
+    drawIcon('icon48', 48);
+    drawIcon('icon96', 96);
+  </script>
+</body>
+</html>

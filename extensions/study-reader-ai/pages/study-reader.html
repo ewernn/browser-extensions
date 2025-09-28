@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>📚 Study Reader + AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../libs/katex.min.css">
+  <link rel="stylesheet" href="study-reader.css">
+</head>
+<body>
+  <div id="header">
+    <div></div>
+    <div id="headerRight">
+      <div class="toggle-wrapper">
+        <span class="toggle-label">Focus</span>
+        <button id="toggleEditor">📝</button>
+      </div>
+      <div class="ios-toggle" id="darkModeToggle">
+        <div class="ios-toggle-handle"></div>
+      </div>
+      <button id="settingsBtn" title="Settings">⚙️</button>
+    </div>
+  </div>
+  <div id="mainContainer">
+    <div id="editorWrapper">
+      <textarea id="editor" placeholder="Type markdown here..."></textarea>
+    </div>
+    <div id="resizer"></div>
+    <div id="previewWrapper">
+      <div id="preview"></div>
+    </div>
+  </div>
+  <div id="selectionPopup">
+    <button id="explainBtn">Explain</button>
+  </div>
+  <div id="tooltip"></div>
+
+  <div id="settingsModal">
+    <div id="settingsContent">
+      <h2>
+        Settings
+        <button id="closeSettings">✕</button>
+      </h2>
+
+      <label for="providerSelect">AI Provider:</label>
+      <select id="providerSelect">
+        <option value="gemini">Google Gemini</option>
+        <option value="openai">OpenAI</option>
+        <option value="anthropic">Anthropic Claude</option>
+        <option value="xai">xAI Grok</option>
+      </select>
+
+      <label for="modelSelect">Model:</label>
+      <select id="modelSelect">
+        <!-- Populated dynamically -->
+      </select>
+
+      <label for="apiKeyInput">API Key:</label>
+      <input type="password" id="apiKeyInput" placeholder="Enter your API key">
+
+      <label for="promptTemplate">Prompt Template: <small style="font-weight: normal; color: #666;">(Use {term} for highlighted text - can be any length)</small></label>
+      <textarea id="promptTemplate" placeholder="Use {term} where the selected text should go. Example: 'Explain {term} in simple terms'">Explain "{term}" in simple terms. Include key points and a brief example if relevant. Keep it concise (under 50 words).</textarea>
+
+      <div id="settingsButtons">
+        <button id="resetPrompt">Reset Prompt</button>
+        <button id="saveSettings">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../libs/marked.min.js"></script>
+  <script src="../libs/katex.min.js"></script>
+  <script src="../libs/auto-render.min.js"></script>
+  <script src="study-reader.js"></script>
+</body>
+</html>

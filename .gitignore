@@ -1,0 +1,36 @@
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Package files
+*.zip
+*.xpi
+*.crx
+
+# Node modules (if any extension uses npm)
+node_modules/
+
+# Temporary files
+*.tmp
+*.temp
+
+# API Keys and sensitive data (in case someone accidentally commits them)
+.env
+.env.local
+config.local.js
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log

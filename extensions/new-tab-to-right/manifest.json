@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Simple Tab Tools",
+  "version": "1.2.0",
+  "description": "Keyboard shortcuts for tab management: open new tabs to the right and move tabs left/right",
+  "author": "privacy-focused-dev",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "simpletabtools@example.com"
+    }
+  },
+  "icons": {
+    "48": "icon-48.png",
+    "96": "icon-96.png",
+    "128": "icon-128.png"
+  },
+  "commands": {
+    "new-tab-right": {
+      "suggested_key": {
+        "default": "Alt+Shift+D"
+      },
+      "description": "Open new tab to the right"
+    },
+    "move-tab-left": {
+      "suggested_key": {
+        "default": "Alt+Shift+Left"
+      },
+      "description": "Move current tab left"
+    },
+    "move-tab-right": {
+      "suggested_key": {
+        "default": "Alt+Shift+Right"
+      },
+      "description": "Move current tab right"
+    }
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "permissions": ["tabs"]
+}
