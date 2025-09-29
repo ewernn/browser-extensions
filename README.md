@@ -1,35 +1,41 @@
 # 🧩 Browser Extensions Collection
 
-A collection of useful Firefox/Chrome browser extensions to enhance your browsing experience.
+Some useful Firefox/Chrome browser extensions I made to make my life easier/faster
 
 ## 📚 Extensions
 
 ### [Study Reader + AI](extensions/study-reader-ai/)
-AI-powered study assistant that provides instant explanations for any selected text. Supports multiple AI providers (Gemini, OpenAI, Claude, xAI) with customizable prompts.
+AI-powered reading assistant that provides instant AI explanations for any selected text if you have an API key. Supports multiple AI providers (Gemini, OpenAI, xAI) with customizable prompts.
 
 **Features:**
-- 📝 Markdown editor with live preview
-- 🤖 Select text → Get AI explanations
-- 🌙 Dark mode support
-- 📐 LaTeX math rendering
+- Markdown editor with live preview
+- Select text → Get AI explanations
+- Dark mode support
+- LaTeX math rendering
 
 ### [Copy Text Exclude](extensions/copy-text-exclude/)
-Copy text from webpages while excluding unwanted elements like timestamps, usernames, or other noise.
+Omit private text from clipboard when you copy text from webpages (exclude unwanted elements like API keys, usernames, or other noise)
 
 **Features:**
-- 🎯 Smart text selection
-- 🚫 Exclude specific elements
-- 📋 Clean copy to clipboard
+- Smart text selection
+- Exclude specific elements
+- Clean copy to clipboard
 
 ### [New Tab to Right](extensions/new-tab-to-right/)
-Always open new tabs to the right of the current tab instead of at the end of the tab bar.
+Open new tabs to the right of the current tab instead of at the end of the tab bar, with option+shift+D.
 
 **Features:**
-- ➡️ Opens tabs next to current tab
-- 🎯 Better tab organization
-- ⚡ Lightweight and fast
+- Opens tabs next to current tab
+- Better tab organization
+- Lightweight and fast
 
 ## 🚀 Installation
+
+### links
+
+[Copy Text Exclude extension](https://addons.mozilla.org/en-US/firefox/addon/copy-text-exclude)
+[Simple Tab Tools extension](https://addons.mozilla.org/en-US/firefox/addon/simple-tab-tools)
+*Study Reader + AI coming soon*
 
 ### For Development (All Extensions)
 
