@@ -21,6 +21,9 @@ const resetPrompt = document.getElementById('resetPrompt');
 const saveSettings = document.getElementById('saveSettings');
 const resizer = document.getElementById('resizer');
 const modelDisplay = document.getElementById('modelDisplay');
+const modelPriceInfo = document.getElementById('modelPriceInfo');
+const modelCostDisplay = document.getElementById('modelCostDisplay');
+const contextWindowSize = document.getElementById('contextWindowSize');
 
 // Load explanations from sessionStorage (persists until tab closes)
 let explanations = {};
@@ -39,38 +42,59 @@ let selectedText = '';
 const defaultPrompt = 'Explain "{term}" in simple terms. Include key points and a brief example if relevant. Keep it concise (under 50 words).';
 
 let settings = {
-  provider: 'gemini',
-  model: 'gemini-2.5-flash-lite',  // Default to cheapest
+  provider: 'openai',
+  model: 'gpt-5-nano',  // Default to cheapest overall
   apiKeys: {
     gemini: '',
     openai: '',
     xai: ''
   },
-  customPrompt: defaultPrompt
+  customPrompt: defaultPrompt,
+  contextWindowChars: 0  // Context window size in characters (0 = disabled)
 };
 
-// Load settings from browser storage
+// Check if we're running as an extension
+const isExtension = typeof browser !== 'undefined' && browser.storage;
+
+// Load settings from storage
 async function loadSettings() {
   try {
-    const stored = await browser.storage.local.get(['settings', 'editorContent']);
-    if (stored.settings) {
-      settings = { ...settings, ...stored.settings };
-    }
-    if (stored.editorContent) {
-      editor.value = stored.editorContent;
-      updatePreview();
+    if (isExtension) {
+      const stored = await browser.storage.local.get(['settings', 'editorContent']);
+      if (stored.settings) {
+        settings = { ...settings, ...stored.settings };
+      }
+      if (stored.editorContent) {
+        editor.value = stored.editorContent;
+        updatePreview();
+      }
+    } else {
+      // Use localStorage as fallback
+      const storedSettings = localStorage.getItem('settings');
+      if (storedSettings) {
+        settings = { ...settings, ...JSON.parse(storedSettings) };
+      }
+      const storedContent = localStorage.getItem('editorContent');
+      if (storedContent) {
+        editor.value = storedContent;
+        updatePreview();
+      }
     }
   } catch (e) {
-    console.log('Using default settings');
+    console.log('Error loading settings:', e);
   }
 }
 
-// Save settings to browser storage
+// Save settings to storage
 async function saveSettingsToStorage() {
   try {
-    await browser.storage.local.set({ settings });
+    if (isExtension) {
+      await browser.storage.local.set({ settings });
+    } else {
+      localStorage.setItem('settings', JSON.stringify(settings));
+    }
   } catch (e) {
-    console.log('Could not save settings');
+    console.log('Could not save settings:', e);
   }
 }
 
@@ -80,9 +104,13 @@ function autoSaveContent() {
   clearTimeout(saveTimeout);
   saveTimeout = setTimeout(async () => {
     try {
-      await browser.storage.local.set({ editorContent: editor.value });
+      if (isExtension) {
+        await browser.storage.local.set({ editorContent: editor.value });
+      } else {
+        localStorage.setItem('editorContent', editor.value);
+      }
     } catch (e) {
-      console.log('Could not auto-save content');
+      console.log('Could not auto-save content:', e);
     }
   }, 1000);
 }
@@ -91,9 +119,9 @@ const providers = {
   gemini: {
     name: 'Google Gemini',
     models: [
-      { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite - Most cost-effective' },
-      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash - Best price-performance' },
-      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro - Latest thinking model' }
+      { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', cost100: '~$0.005', costPerM: '$0.10/$0.40 per 1M tokens' },
+      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', cost100: '~$0.03', costPerM: '$0.30/$2.50 per 1M tokens' },
+      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', cost100: '~$0.11', costPerM: '$1.25/$10.00 per 1M tokens' }
     ],
     getUrl: (model, key) => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
     buildRequest: (prompt) => ({
@@ -115,9 +143,9 @@ const providers = {
   openai: {
     name: 'OpenAI',
     models: [
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini - Cheapest' },
-      { id: 'gpt-4o', name: 'GPT-4o - Standard' },
-      { id: 'gpt-4-turbo', name: 'GPT-4 Turbo - Most capable' }
+      { id: 'gpt-5-nano', name: 'GPT-5 Nano', cost100: '~$0.004', costPerM: '$0.05/$0.40 per 1M tokens' },
+      { id: 'gpt-5-mini', name: 'GPT-5 Mini', cost100: '~$0.02', costPerM: '$0.25/$2.00 per 1M tokens' },
+      { id: 'gpt-5', name: 'GPT-5', cost100: '~$0.11', costPerM: '$1.25/$10.00 per 1M tokens' }
     ],
     getUrl: () => 'https://api.openai.com/v1/chat/completions',
     buildRequest: (prompt, model, key) => ({
@@ -138,9 +166,9 @@ const providers = {
   xai: {
     name: 'xAI Grok',
     models: [
-      { id: 'grok-beta', name: 'Grok Beta - Free/cheapest' },
-      { id: 'grok-2-mini', name: 'Grok 2 Mini - Efficient' },
-      { id: 'grok-2', name: 'Grok 2 - Full capability' }
+      { id: 'grok-4-fast-non-reasoning', name: 'Grok 4 Fast Non-Reasoning', cost100: '~$0.006', costPerM: '$0.20/$0.50 per 1M tokens' },
+      { id: 'grok-4-fast-reasoning', name: 'Grok 4 Fast Reasoning', cost100: '~$0.006', costPerM: '$0.20/$0.50 per 1M tokens' },
+      { id: 'grok-4-0709', name: 'Grok 4', cost100: '~$0.17', costPerM: '$3.00/$15.00 per 1M tokens' }
     ],
     getUrl: () => 'https://api.x.ai/v1/chat/completions',
     buildRequest: (prompt, model, key) => ({
@@ -161,17 +189,47 @@ const providers = {
 };
 
 function updateModelSelect() {
-  const provider = providers[providerSelect.value];
-  modelSelect.innerHTML = '';
-  provider.models.forEach(model => {
-    const option = document.createElement('option');
-    option.value = model.id;
-    option.textContent = model.name;
-    if (model.id === settings.model) {
-      option.selected = true;
+  try {
+    const provider = providers[providerSelect.value];
+    if (!provider) {
+      console.error('Provider not found:', providerSelect.value);
+      return;
     }
-    modelSelect.appendChild(option);
-  });
+    modelSelect.innerHTML = '';
+    provider.models.forEach(model => {
+      const option = document.createElement('option');
+      option.value = model.id;
+      // Just show model name in the dropdown
+      option.textContent = model.name;
+      if (model.id === settings.model) {
+        option.selected = true;
+      }
+      modelSelect.appendChild(option);
+    });
+    updatePriceInfo();
+  } catch (e) {
+    console.error('Error updating model select:', e);
+  }
+}
+
+function updatePriceInfo() {
+  const provider = providers[providerSelect.value];
+  const selectedModel = provider.models.find(m => m.id === modelSelect.value);
+
+  // Update the cost display next to the Model label
+  if (selectedModel && selectedModel.cost100 && modelCostDisplay) {
+    modelCostDisplay.textContent = `${selectedModel.cost100} per 100 queries`;
+  } else if (modelCostDisplay) {
+    modelCostDisplay.textContent = '';
+  }
+
+  // Update the per-million cost below the dropdown
+  if (selectedModel && selectedModel.costPerM && modelPriceInfo) {
+    modelPriceInfo.textContent = `(${selectedModel.costPerM})`;
+    modelPriceInfo.style.display = 'block';
+  } else if (modelPriceInfo) {
+    modelPriceInfo.style.display = 'none';
+  }
 }
 
 function updateModelDisplay() {
@@ -194,11 +252,56 @@ function updateModelDisplay() {
   }
 }
 
-async function getExplanation(term) {
+// Extract context window around selected text
+function getContextWindow(fullText, selectedText, selectionStart, selectionEnd, contextLength) {
+  // If context is disabled (0), return empty strings
+  if (!contextLength || contextLength <= 0) {
+    return { beforeText: '', afterText: '' };
+  }
+
+  // Get before context
+  const beforeStart = Math.max(0, selectionStart - contextLength);
+  let beforeText = fullText.substring(beforeStart, selectionStart);
+
+  // Trim to word boundary if we're not at the start
+  if (beforeStart > 0) {
+    const firstSpace = beforeText.indexOf(' ');
+    if (firstSpace > 0 && firstSpace < 20) {
+      beforeText = beforeText.substring(firstSpace + 1);
+    }
+    beforeText = '...' + beforeText;
+  }
+
+  // Get after context
+  const afterEnd = Math.min(fullText.length, selectionEnd + contextLength);
+  let afterText = fullText.substring(selectionEnd, afterEnd);
+
+  // Trim to word boundary if we're not at the end
+  if (afterEnd < fullText.length) {
+    const lastSpace = afterText.lastIndexOf(' ');
+    if (lastSpace > afterText.length - 20 && lastSpace > 0) {
+      afterText = afterText.substring(0, lastSpace);
+    }
+    afterText = afterText + '...';
+  }
+
+  // Normalize line breaks to spaces
+  beforeText = beforeText.replace(/\s+/g, ' ').trim();
+  afterText = afterText.replace(/\s+/g, ' ').trim();
+
+  return { beforeText, afterText };
+}
+
+async function getExplanation(term, contextBefore = '', contextAfter = '') {
   const normalizedTerm = term.trim().toLowerCase();
 
-  if (explanations[normalizedTerm]) {
-    return explanations[normalizedTerm];
+  // Create a cache key that includes context if provided
+  const cacheKey = (contextBefore || contextAfter)
+    ? `${normalizedTerm}::${contextBefore}::${contextAfter}`
+    : normalizedTerm;
+
+  if (explanations[cacheKey]) {
+    return explanations[cacheKey];
   }
 
   const provider = providers[settings.provider];
@@ -210,8 +313,18 @@ async function getExplanation(term) {
     return `Please set your ${provider.name} API key in Settings (Settings opened automatically)`;
   }
 
-  // Replace {term} in prompt template
-  const prompt = settings.customPrompt.replace('{term}', term);
+  // Build prompt with or without context
+  let prompt;
+  if (contextBefore || contextAfter) {
+    // Include context in the prompt
+    const contextStr = `${contextBefore} [[${term}]] ${contextAfter}`.trim();
+    prompt = `Given this context: "${contextStr}"
+
+${settings.customPrompt.replace('{term}', term)}`;
+  } else {
+    // Simple prompt without context
+    prompt = settings.customPrompt.replace('{term}', term);
+  }
 
   try {
     let url, requestOptions;
@@ -232,7 +345,7 @@ async function getExplanation(term) {
     }
 
     const explanation = provider.parseResponse(data);
-    explanations[normalizedTerm] = explanation;
+    explanations[cacheKey] = explanation;
 
     // Save to sessionStorage
     try {
@@ -356,9 +469,13 @@ darkModeToggle.addEventListener('click', async () => {
   darkModeToggle.classList.toggle('active');
   const isDark = document.body.classList.contains('dark');
 
-  try {
-    await browser.storage.local.set({ darkMode: isDark });
-  } catch (e) {
+  if (isExtension) {
+    try {
+      await browser.storage.local.set({ darkMode: isDark });
+    } catch (e) {
+      console.log('Error saving dark mode:', e);
+    }
+  } else {
     localStorage.setItem('darkMode', isDark);
   }
 });
@@ -403,7 +520,8 @@ document.addEventListener('mouseup', () => {
 // Text selection
 preview.addEventListener('mouseup', (e) => {
   const selection = window.getSelection();
-  selectedText = selection.toString().trim();
+  // Normalize whitespace: newlines/tabs → spaces, multiple spaces → single space
+  selectedText = selection.toString().replace(/\s+/g, ' ').trim();
 
   if (selectedText && selectedText.length > 0) {
     const range = selection.getRangeAt(0);
@@ -426,16 +544,122 @@ explainBtn.addEventListener('click', async () => {
   const selection = window.getSelection();
   const range = selection.getRangeAt(0);
 
+  // Debug: Check if selection crosses block boundaries
+  const startBlock = range.startContainer.nodeType === Node.TEXT_NODE
+    ? range.startContainer.parentElement
+    : range.startContainer;
+  const endBlock = range.endContainer.nodeType === Node.TEXT_NODE
+    ? range.endContainer.parentElement
+    : range.endContainer;
+
+  const crossesBlocks = startBlock !== endBlock &&
+    (startBlock.tagName !== endBlock.tagName ||
+     !startBlock.parentElement ||
+     startBlock.parentElement !== endBlock.parentElement);
+
+  console.log('Selection debug:', {
+    text: selectedText,
+    crossesBlocks,
+    startBlock: startBlock.tagName,
+    endBlock: endBlock.tagName,
+    rangeStart: range.startOffset,
+    rangeEnd: range.endOffset
+  });
+
+  // Get context if context window is enabled (> 0 characters)
+  let contextBefore = '';
+  let contextAfter = '';
+
+  if (settings.contextWindowChars > 0) {
+    // Normalize both texts the same way to ensure we find the selection
+    const fullText = (previewWrapper.textContent || '').replace(/\s+/g, ' ');
+    const normalizedSelected = selectedText.replace(/\s+/g, ' ').trim();
+    const selectionStart = fullText.indexOf(normalizedSelected);
+
+    console.log('Context debug:', {
+      foundAt: selectionStart,
+      searchingFor: normalizedSelected.substring(0, 50),
+      fullTextLength: fullText.length
+    });
+
+    if (selectionStart !== -1) {
+      const context = getContextWindow(
+        fullText,
+        normalizedSelected,
+        selectionStart,
+        selectionStart + normalizedSelected.length,
+        settings.contextWindowChars
+      );
+      contextBefore = context.beforeText;
+      contextAfter = context.afterText;
+
+      console.log('Context extracted:', {
+        before: contextBefore.substring(0, 50) + '...',
+        after: '...' + contextAfter.substring(contextAfter.length - 50)
+      });
+    }
+  }
+
   const span = document.createElement('span');
   span.className = 'explained-term';
   span.dataset.term = selectedText.trim().toLowerCase();
 
-  try {
-    range.surroundContents(span);
-  } catch(e) {
-    const contents = range.extractContents();
-    span.appendChild(contents);
-    range.insertNode(span);
+  // Handle highlighting based on whether selection crosses blocks
+  if (crossesBlocks) {
+    console.log('Cross-block selection detected - highlighting first block only');
+
+    // Create a new range for just the first block
+    const firstBlockRange = document.createRange();
+    firstBlockRange.setStart(range.startContainer, range.startOffset);
+
+    // Find the end of the first block's text content
+    let endNode = range.startContainer;
+    let endOffset = range.startOffset;
+
+    // Walk through the first block to find its last text node
+    const walker = document.createTreeWalker(
+      startBlock,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
+
+    let lastTextNode = null;
+    while (walker.nextNode()) {
+      lastTextNode = walker.currentNode;
+    }
+
+    if (lastTextNode) {
+      firstBlockRange.setEnd(lastTextNode, lastTextNode.textContent.length);
+    }
+
+    try {
+      firstBlockRange.surroundContents(span);
+      console.log('Highlighted first block portion successfully');
+    } catch(e) {
+      console.log('First block highlighting failed, trying simpler approach');
+      // Even simpler fallback: just insert marker at start
+      span.textContent = '→';
+      span.className = 'explained-term explained-marker';
+      range.insertNode(span);
+    }
+  } else {
+    // Single block selection - use normal highlighting
+    try {
+      range.surroundContents(span);
+      console.log('Highlighting succeeded with surroundContents');
+    } catch(e) {
+      console.log('surroundContents failed:', e.message, '- trying fallback');
+      try {
+        const contents = range.extractContents();
+        span.appendChild(contents);
+        range.insertNode(span);
+        console.log('Highlighting succeeded with fallback method');
+      } catch(e2) {
+        console.error('Both highlighting methods failed:', e2);
+        // Still proceed without highlighting
+      }
+    }
   }
 
   window.getSelection().removeAllRanges();
@@ -445,16 +669,16 @@ explainBtn.addEventListener('click', async () => {
   spinner.className = 'loading-spinner';
   span.appendChild(spinner);
 
-  // Get explanation
-  const explanation = await getExplanation(selectedText);
+  // Get explanation with context if enabled
+  const explanation = await getExplanation(selectedText, contextBefore, contextAfter);
 
   // Remove spinner
   if (spinner.parentNode) {
     spinner.remove();
   }
 
-  // Update preview to show all highlighted terms
-  updatePreview();
+  // Don't update preview - it would destroy the highlighting we just added
+  // updatePreview();
 
   // Add hover handlers
   span.addEventListener('mouseenter', (e) => {
@@ -482,12 +706,19 @@ previewWrapper.addEventListener('scroll', () => {
 
 // Settings modal
 settingsBtn.addEventListener('click', () => {
-  apiKeyInput.value = settings.apiKeys[settings.provider];
-  providerSelect.value = settings.provider;
-  modelSelect.value = settings.model;
-  promptTemplate.value = settings.customPrompt;
+  console.log('Settings clicked - current settings:', settings);
+  console.log('Modal element:', settingsModal);
+
+  apiKeyInput.value = settings.apiKeys[settings.provider] || '';
+  providerSelect.value = settings.provider || 'gemini';
+  modelSelect.value = settings.model || 'gemini-2.5-flash-lite';
+  promptTemplate.value = settings.customPrompt || defaultPrompt;
+  contextWindowSize.value = settings.contextWindowChars || 0;
   updateModelSelect();
+  updatePriceInfo();
   settingsModal.classList.add('show');
+
+  console.log('Modal classes after adding show:', settingsModal.classList.toString());
 });
 
 closeSettings.addEventListener('click', () => {
@@ -505,6 +736,10 @@ providerSelect.addEventListener('change', () => {
   apiKeyInput.value = settings.apiKeys[providerSelect.value] || '';
 });
 
+modelSelect.addEventListener('change', () => {
+  updatePriceInfo();
+});
+
 resetPrompt.addEventListener('click', () => {
   promptTemplate.value = defaultPrompt;
 });
@@ -514,6 +749,10 @@ saveSettings.addEventListener('click', async () => {
   settings.model = modelSelect.value;
   settings.apiKeys[settings.provider] = apiKeyInput.value;
   settings.customPrompt = promptTemplate.value;
+
+  // Parse and validate context window size
+  const contextSize = parseInt(contextWindowSize.value) || 0;
+  settings.contextWindowChars = Math.min(Math.max(contextSize, 0), 1000); // Clamp between 0-1000
 
   await saveSettingsToStorage();
   updateModelDisplay();
@@ -558,19 +797,21 @@ async function initialize() {
   await loadSettings();
 
   // Load dark mode preference
-  try {
-    const stored = await browser.storage.local.get('darkMode');
-    if (stored.darkMode) {
-      document.body.classList.add('dark');
-      darkModeToggle.classList.add('active');
+  let darkMode = false;
+  if (isExtension) {
+    try {
+      const stored = await browser.storage.local.get('darkMode');
+      darkMode = stored.darkMode === true;
+    } catch (e) {
+      console.log('Error loading dark mode:', e);
     }
-  } catch (e) {
-    // Fallback to localStorage for testing
-    const savedDarkMode = localStorage.getItem('darkMode');
-    if (savedDarkMode === 'true') {
-      document.body.classList.add('dark');
-      darkModeToggle.classList.add('active');
-    }
+  } else {
+    darkMode = localStorage.getItem('darkMode') === 'true';
+  }
+
+  if (darkMode) {
+    document.body.classList.add('dark');
+    darkModeToggle.classList.add('active');
   }
 
   // Set default content if empty

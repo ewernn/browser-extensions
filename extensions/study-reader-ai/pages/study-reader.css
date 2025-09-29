@@ -373,8 +373,20 @@ body.dark #settingsContent {
   border: 1px solid rgba(0,0,0,0.2);
   border-radius: 6px;
   font-size: 14px;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-weight: 300;
   background: white;
   color: black;
+}
+
+/* Style for the model price info */
+#modelPriceInfo {
+  color: #888;
+  font-family: 'Crimson Pro', Georgia, serif;
+}
+
+body.dark #modelPriceInfo {
+  color: #666;
 }
 
 body.dark #settingsContent input,
