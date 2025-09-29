@@ -20,6 +20,7 @@ const promptTemplate = document.getElementById('promptTemplate');
 const resetPrompt = document.getElementById('resetPrompt');
 const saveSettings = document.getElementById('saveSettings');
 const resizer = document.getElementById('resizer');
+const modelDisplay = document.getElementById('modelDisplay');
 
 // Load explanations from sessionStorage (persists until tab closes)
 let explanations = {};
@@ -43,7 +44,6 @@ let settings = {
   apiKeys: {
     gemini: '',
     openai: '',
-    anthropic: '',
     xai: ''
   },
   customPrompt: defaultPrompt
@@ -135,30 +135,6 @@ const providers = {
     }),
     parseResponse: (data) => data.choices[0].message.content
   },
-  anthropic: {
-    name: 'Anthropic Claude',
-    models: [
-      { id: 'claude-3.5-haiku-20241022', name: 'Claude 3.5 Haiku - Fastest/cheapest' },
-      { id: 'claude-3.5-sonnet-20241022', name: 'Claude 3.5 Sonnet - Balanced' },
-      { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus - Most powerful' }
-    ],
-    getUrl: () => 'https://api.anthropic.com/v1/messages',
-    buildRequest: (prompt, model, key) => ({
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 150,  // Anthropic still uses max_tokens
-        temperature: 0.7
-      })
-    }),
-    parseResponse: (data) => data.content[0].text
-  },
   xai: {
     name: 'xAI Grok',
     models: [
@@ -196,6 +172,26 @@ function updateModelSelect() {
     }
     modelSelect.appendChild(option);
   });
+}
+
+function updateModelDisplay() {
+  // Only show model if user has an API key for current provider
+  const hasApiKey = settings.apiKeys[settings.provider] && settings.apiKeys[settings.provider].length > 0;
+
+  if (!hasApiKey) {
+    modelDisplay.textContent = '';
+    return;
+  }
+
+  const provider = providers[settings.provider];
+  const model = provider.models.find(m => m.id === settings.model);
+  if (model) {
+    // Show shortened model name
+    const shortName = model.name.split(' - ')[0];
+    modelDisplay.textContent = shortName;
+  } else {
+    modelDisplay.textContent = '';
+  }
 }
 
 async function getExplanation(term) {
@@ -520,6 +516,7 @@ saveSettings.addEventListener('click', async () => {
   settings.customPrompt = promptTemplate.value;
 
   await saveSettingsToStorage();
+  updateModelDisplay();
   settingsModal.classList.remove('show');
 });
 
@@ -582,6 +579,7 @@ async function initialize() {
   }
 
   updateModelSelect();
+  updateModelDisplay();
   updatePreview();
 }
 

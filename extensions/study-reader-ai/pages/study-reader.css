@@ -6,7 +6,7 @@
 
 body {
   font-family: 'Crimson Pro', Georgia, serif;
-  font-weight: 400;
+  font-weight: 300;  /* Lighter weight for better readability */
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -44,23 +44,29 @@ button {
 }
 
 #settingsBtn, #toggleEditor {
-  padding: 8px 12px;
+  padding: 8px 14px;
   font-size: 14px;
-  font-weight: bold;
+  font-weight: normal;
   background: rgba(0,0,0,0.15);
-  min-width: 36px;
 }
 
 #settingsBtn:hover, #toggleEditor:hover {
   background: rgba(0,0,0,0.25);
 }
 
+body.dark #settingsBtn, body.dark #toggleEditor {
+  background: rgba(255,255,255,0.12);  /* Subtler background in dark mode */
+  color: rgba(255,255,255,0.85);
+  border: none;  /* Explicitly remove any border */
+}
+
 body.dark #settingsBtn:hover, body.dark #toggleEditor:hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.18);  /* Slightly lighter on hover */
 }
 
 body.dark button {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.9);
 }
 
 #mainContainer {
@@ -146,7 +152,8 @@ body.dark #editor {
   margin-bottom: 20px;
   padding: 40px;
   font-size: 16px;
-  line-height: 1.4;
+  font-weight: 300;  /* Light weight for body text */
+  line-height: 1.5;  /* Slightly more line spacing for readability */
   border: 1px solid rgba(0,0,0,0.08);
   border-radius: 8px;
   background: rgba(255,255,255,0.5);
@@ -165,13 +172,17 @@ body.dark #preview {
 
 #preview h1, #preview h2, #preview h3 {
   margin: 16px 0 12px 0;
-  font-weight: 500;
+  font-weight: 500;  /* Medium weight for headings to contrast with light body */
 }
 
 #preview h1 { font-size: 1.8em; }
 #preview h2 { font-size: 1.4em; }
 #preview h3 { font-size: 1.15em; }
-#preview p { margin-bottom: 12px; }
+
+#preview p {
+  margin-bottom: 12px;
+  font-weight: 300;  /* Ensure paragraphs are light */
+}
 
 #preview code {
   background: rgba(0,0,0,0.1);
@@ -260,21 +271,17 @@ body.dark #tooltip {
   align-items: center;
 }
 
-.toggle-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+#modelDisplay {
+  font-size: 13px;
+  color: rgba(0,0,0,0.5);
+  margin-right: 10px;
 }
 
-.toggle-label {
-  font-size: 14px;
-  color: rgba(0,0,0,0.7);
-  font-weight: 500;
+body.dark #modelDisplay {
+  color: rgba(255,255,255,0.4);
 }
 
-body.dark .toggle-label {
-  color: rgba(255,255,255,0.7);
-}
+/* Removed unused toggle-wrapper and toggle-label styles */
 
 .ios-toggle {
   position: relative;
@@ -393,13 +400,23 @@ body.dark #settingsContent textarea {
 
 #closeSettings {
   background: none;
-  border: none;
-  font-size: 20px;
+  border: 1px solid rgba(0,0,0,0.2);
+  font-size: 13px;
   cursor: pointer;
-  padding: 0;
+  padding: 4px 12px;
   color: #666;
+  border-radius: 4px;
+}
+
+#closeSettings:hover {
+  background: rgba(0,0,0,0.05);
 }
 
 body.dark #closeSettings {
   color: #999;
+  border-color: rgba(255,255,255,0.2);
+}
+
+body.dark #closeSettings:hover {
+  background: rgba(255,255,255,0.05);
 }
