@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "Study Reader + AI",
-  "version": "1.0.0",
-  "description": "Study reader with AI-powered explanations for any text. Select and explain anything instantly.",
+  "version": "1.0.5",
+  "description": "Study reader with AI-powered explanations for any text.",
 
   "permissions": [
     "storage",
@@ -12,24 +12,25 @@
   ],
 
   "browser_action": {
-    "default_icon": "icons/icon.svg",
+    "default_icon": {
+      "48": "icons/icon48.png",
+      "96": "icons/icon96.png"
+    },
     "default_title": "Open Study Reader"
   },
 
   "background": {
-    "scripts": ["background.js"],
-    "persistent": false
+    "scripts": ["background.js"]
   },
 
   "icons": {
-    "48": "icons/icon.svg",
-    "96": "icons/icon.svg"
+    "48": "icons/icon48.png",
+    "96": "icons/icon96.png"
   },
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "study-reader@extension",
-      "strict_min_version": "109.0"
+      "id": "study-reader@extension"
     }
   }
 }

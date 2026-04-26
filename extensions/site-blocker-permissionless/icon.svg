@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" stroke="#4a9fd6" stroke-width="6" stroke-linejoin="round">
+  <!-- Row 1: full brick, then half brick -->
+  <rect x="22" y="14" width="56" height="50" rx="3"/>
+  <rect x="78" y="14" width="28" height="50" rx="3"/>
+  <!-- Row 2 (offset): half brick, then full brick -->
+  <rect x="22" y="64" width="28" height="50" rx="3"/>
+  <rect x="50" y="64" width="56" height="50" rx="3"/>
+</svg>

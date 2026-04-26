@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8" />
   <title>Study Reader + AI</title>
   <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -9,19 +10,23 @@
 </head>
 <body>
   <div id="header">
-    <div></div>
+    <div id="headerLeft">
+      <button id="newDocBtn" title="New Document">New</button>
+      <button id="historyBtn" title="History">History</button>
+      <span id="docTitle" contenteditable="true" placeholder="Untitled">Untitled</span>
+    </div>
     <div id="headerRight">
       <span id="modelDisplay"></span>
       <div class="ios-toggle" id="darkModeToggle">
         <div class="ios-toggle-handle"></div>
       </div>
-      <button id="toggleEditor" title="Toggle Editor">Focus</button>
+      <button id="toggleViewBtn" title="Toggle view (Tab): Both → Reader → Editor">Toggle view: Both</button>
       <button id="settingsBtn" title="Settings">Settings</button>
     </div>
   </div>
   <div id="mainContainer">
     <div id="editorWrapper">
-      <textarea id="editor" placeholder="Type markdown here..."></textarea>
+      <textarea id="editor" placeholder="Type markdown here..." spellcheck="false"></textarea>
     </div>
     <div id="resizer"></div>
     <div id="previewWrapper">
@@ -32,6 +37,18 @@
     <button id="explainBtn">Explain</button>
   </div>
   <div id="tooltip"></div>
+
+  <div id="historyModal">
+    <div id="historyContent">
+      <h2>
+        History
+        <button id="closeHistory">Close</button>
+      </h2>
+      <div id="historyList">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
 
   <div id="settingsModal">
     <div id="settingsContent">
@@ -59,6 +76,11 @@
       <label for="contextWindowSize">Context Window: <small style="font-weight: normal; color: #666;">(characters before/after selection, 0 = disabled, recommended: 200)</small></label>
       <input type="number" id="contextWindowSize" min="0" max="1000" step="50" value="0" placeholder="0-1000">
 
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input type="checkbox" id="spellcheckToggle" style="width: auto; margin: 0;">
+        Enable spellcheck in editor
+      </label>
+
       <label for="promptTemplate">Prompt Template: <small style="font-weight: normal; color: #666;">(Use {term} for highlighted text - can be any length)</small></label>
       <textarea id="promptTemplate" placeholder="Use {term} where the selected text should go. Example: 'Explain {term} in simple terms'">Explain "{term}" in simple terms. Include key points and a brief example if relevant. Keep it concise (under 50 words).</textarea>
 
@@ -69,6 +91,7 @@
     </div>
   </div>
 
+  <script src="../libs/purify.min.js"></script>
   <script src="../libs/marked.min.js"></script>
   <script src="../libs/katex.min.js"></script>
   <script src="../libs/auto-render.min.js"></script>

@@ -1,0 +1,50 @@
+{
+  "manifest_version": 2,
+  "name": "Dark Reader Minimal",
+  "version": "1.1.0",
+  "description": "Minimal dark mode for the web. Follows your system theme, auto-skips already-dark sites, per-site toggle, no telemetry. Powered by the Dark Reader engine.",
+  "homepage_url": "https://github.com/ewernn/browser-extensions",
+
+  "permissions": ["storage", "<all_urls>"],
+
+  "browser_action": {
+    "default_icon": "icons/moon.svg",
+    "default_title": "Dark Reader Minimal",
+    "default_popup": "popup.html"
+  },
+
+  "icons": {
+    "48": "icons/moon.svg",
+    "96": "icons/moon.svg"
+  },
+
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["libs/darkreader.js", "content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+
+  "commands": {
+    "toggle-dark": {
+      "suggested_key": { "default": "Ctrl+Shift+Y" },
+      "description": "Toggle dark mode for the current site"
+    }
+  },
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "dark-reader-minimal@ewern.dev",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  }
+}

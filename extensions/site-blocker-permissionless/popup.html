@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    :root {
+      --bg: #f7f5f0;
+      --panel: #ffffff;
+      --border: #d9d5cc;
+      --text: #2a2d33;
+      --muted: #8a8578;
+      --accent: #4a9fd6;
+      --accent-dim: #7fc8f8;
+      --danger: #c44;
+    }
+    body { font-family: -apple-system, system-ui, sans-serif; width: 280px; margin: 0; padding: 12px; background: var(--bg); color: var(--text); }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    h1 { font-size: 13px; margin: 0; color: var(--accent); font-weight: 500; }
+    .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; inset: 0; background: #c9c4b7; border-radius: 18px; transition: .15s; }
+    .slider::before { content: ""; position: absolute; height: 14px; width: 14px; left: 2px; top: 2px; background: #ffffff; border-radius: 50%; transition: .15s; }
+    input:checked + .slider { background: var(--accent); }
+    input:checked + .slider::before { transform: translateX(16px); background: #ffffff; }
+    body.disabled h1 { color: var(--muted); }
+    body.disabled ul { opacity: 0.4; pointer-events: none; }
+    body.disabled form { opacity: 0.4; pointer-events: none; }
+    form { display: flex; gap: 6px; margin-bottom: 10px; }
+    input[type="text"] { flex: 1; padding: 6px 8px; font-size: 13px; border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 4px; outline: none; }
+    input[type="text"]:focus { border-color: var(--accent); }
+    input[type="text"]::placeholder { color: var(--muted); }
+    button { padding: 6px 10px; font-size: 13px; border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 4px; cursor: pointer; transition: .15s; }
+    button:hover { background: var(--accent); border-color: var(--accent); color: #ffffff; }
+    ul { list-style: none; padding: 0; margin: 0; max-height: 240px; overflow-y: auto; }
+    li { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+    li span { color: var(--text); }
+    .remove { color: var(--danger); cursor: pointer; background: none; border: none; font-size: 14px; padding: 0 4px; }
+    .remove:hover { background: none; color: var(--danger); border-color: transparent; }
+    .empty { color: var(--muted); font-size: 12px; font-style: italic; }
+    .status { font-size: 11px; color: var(--accent); margin-top: 8px; min-height: 14px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Blocked sites</h1>
+    <label class="switch" title="Enable/disable blocking">
+      <input type="checkbox" id="enabledToggle" />
+      <span class="slider"></span>
+    </label>
+  </div>
+  <form id="add-form">
+    <input id="domain" type="text" placeholder="youtube.com" autofocus />
+    <button type="submit">Add</button>
+  </form>
+  <ul id="list"></ul>
+  <div class="status" id="status"></div>
+  <script src="popup.js"></script>
+</body>
+</html>

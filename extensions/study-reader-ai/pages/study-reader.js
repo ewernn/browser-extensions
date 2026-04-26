@@ -4,15 +4,21 @@ const editor = document.getElementById('editor');
 const preview = document.getElementById('preview');
 const previewWrapper = document.getElementById('previewWrapper');
 const mainContainer = document.getElementById('mainContainer');
-const toggleEditorBtn = document.getElementById('toggleEditor');
 const darkModeToggle = document.getElementById('darkModeToggle');
 const editorWrapper = document.getElementById('editorWrapper');
+const toggleViewBtn = document.getElementById('toggleViewBtn');
 const tooltip = document.getElementById('tooltip');
 const selectionPopup = document.getElementById('selectionPopup');
 const explainBtn = document.getElementById('explainBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const settingsModal = document.getElementById('settingsModal');
 const closeSettings = document.getElementById('closeSettings');
+const newDocBtn = document.getElementById('newDocBtn');
+const historyBtn = document.getElementById('historyBtn');
+const historyModal = document.getElementById('historyModal');
+const closeHistory = document.getElementById('closeHistory');
+const historyList = document.getElementById('historyList');
+const docTitle = document.getElementById('docTitle');
 const providerSelect = document.getElementById('providerSelect');
 const modelSelect = document.getElementById('modelSelect');
 const apiKeyInput = document.getElementById('apiKeyInput');
@@ -24,6 +30,7 @@ const modelDisplay = document.getElementById('modelDisplay');
 const modelPriceInfo = document.getElementById('modelPriceInfo');
 const modelCostDisplay = document.getElementById('modelCostDisplay');
 const contextWindowSize = document.getElementById('contextWindowSize');
+const spellcheckToggle = document.getElementById('spellcheckToggle');
 
 // Load explanations from sessionStorage (persists until tab closes)
 let explanations = {};
@@ -50,23 +57,37 @@ let settings = {
     xai: ''
   },
   customPrompt: defaultPrompt,
-  contextWindowChars: 0  // Context window size in characters (0 = disabled)
+  contextWindowChars: 0,  // Context window size in characters (0 = disabled)
+  spellcheck: false  // Editor spellcheck
 };
+
+// History management
+let studyHistory = [];  // Array of study documents
+let currentDocId = null;  // ID of currently open document (null = new/unsaved)
 
 // Check if we're running as an extension
 const isExtension = typeof browser !== 'undefined' && browser.storage;
 
-// Load settings from storage
+// Load settings and history from storage
 async function loadSettings() {
   try {
     if (isExtension) {
-      const stored = await browser.storage.local.get(['settings', 'editorContent']);
+      const stored = await browser.storage.local.get(['settings', 'studyHistory', 'currentDocId']);
       if (stored.settings) {
         settings = { ...settings, ...stored.settings };
       }
-      if (stored.editorContent) {
-        editor.value = stored.editorContent;
-        updatePreview();
+      if (stored.studyHistory) {
+        studyHistory = stored.studyHistory;
+      }
+      if (stored.currentDocId !== undefined) {
+        currentDocId = stored.currentDocId;
+        // Load the current document if it exists
+        if (currentDocId !== null) {
+          const doc = studyHistory.find(d => d.id === currentDocId);
+          if (doc) {
+            loadDocument(doc);
+          }
+        }
       }
     } else {
       // Use localStorage as fallback
@@ -74,15 +95,29 @@ async function loadSettings() {
       if (storedSettings) {
         settings = { ...settings, ...JSON.parse(storedSettings) };
       }
-      const storedContent = localStorage.getItem('editorContent');
-      if (storedContent) {
-        editor.value = storedContent;
-        updatePreview();
+      const storedHistory = localStorage.getItem('studyHistory');
+      if (storedHistory) {
+        studyHistory = JSON.parse(storedHistory);
+      }
+      const storedDocId = localStorage.getItem('currentDocId');
+      if (storedDocId) {
+        currentDocId = storedDocId === 'null' ? null : storedDocId;
+        if (currentDocId !== null) {
+          const doc = studyHistory.find(d => d.id === currentDocId);
+          if (doc) {
+            loadDocument(doc);
+          }
+        }
       }
     }
   } catch (e) {
     console.log('Error loading settings:', e);
   }
+  applySpellcheck();
+}
+
+function applySpellcheck() {
+  editor.spellcheck = !!settings.spellcheck;
 }
 
 // Save settings to storage
@@ -98,21 +133,209 @@ async function saveSettingsToStorage() {
   }
 }
 
-// Auto-save editor content
+// Auto-save current document to history
 let saveTimeout;
 function autoSaveContent() {
   clearTimeout(saveTimeout);
   saveTimeout = setTimeout(async () => {
-    try {
-      if (isExtension) {
-        await browser.storage.local.set({ editorContent: editor.value });
-      } else {
-        localStorage.setItem('editorContent', editor.value);
-      }
-    } catch (e) {
-      console.log('Could not auto-save content:', e);
+    await saveCurrentDocument();
+  }, 2000);  // Save every 2 seconds of inactivity
+}
+
+// Generate title from content (first non-empty line, max 60 chars)
+function generateTitle(content) {
+  if (!content || content.trim() === '') return 'Untitled';
+
+  const lines = content.split('\n');
+  for (let line of lines) {
+    const cleaned = line.replace(/^#+\s*/, '').trim();  // Remove markdown headers
+    if (cleaned.length > 0) {
+      return cleaned.length > 60 ? cleaned.substring(0, 57) + '...' : cleaned;
     }
-  }, 1000);
+  }
+  return 'Untitled';
+}
+
+// Save current document to history
+async function saveCurrentDocument() {
+  try {
+    const content = editor.value;
+    const title = docTitle.textContent.trim() || generateTitle(content);
+
+    // Don't save completely empty documents
+    if (!content || content.trim() === '') {
+      return;
+    }
+
+    const now = Date.now();
+
+    if (currentDocId === null) {
+      // Create new document
+      currentDocId = now.toString();
+      const newDoc = {
+        id: currentDocId,
+        title: title,
+        content: content,
+        explanations: { ...explanations },
+        timestamp: now,
+        lastModified: now
+      };
+      studyHistory.unshift(newDoc);  // Add to beginning
+    } else {
+      // Update existing document
+      const docIndex = studyHistory.findIndex(d => d.id === currentDocId);
+      if (docIndex !== -1) {
+        studyHistory[docIndex] = {
+          ...studyHistory[docIndex],
+          title: title,
+          content: content,
+          explanations: { ...explanations },
+          lastModified: now
+        };
+        // Move to front if not already there
+        if (docIndex !== 0) {
+          const doc = studyHistory.splice(docIndex, 1)[0];
+          studyHistory.unshift(doc);
+        }
+      }
+    }
+
+    // Enforce max 20 entries (FIFO)
+    if (studyHistory.length > 20) {
+      studyHistory = studyHistory.slice(0, 20);
+    }
+
+    // Save to storage
+    if (isExtension) {
+      await browser.storage.local.set({
+        studyHistory,
+        currentDocId
+      });
+    } else {
+      localStorage.setItem('studyHistory', JSON.stringify(studyHistory));
+      localStorage.setItem('currentDocId', currentDocId);
+    }
+  } catch (e) {
+    console.log('Could not auto-save document:', e);
+  }
+}
+
+// Load a document from history
+function loadDocument(doc) {
+  currentDocId = doc.id;
+  editor.value = doc.content;
+  docTitle.textContent = doc.title;
+  explanations = doc.explanations || {};
+
+  // Save explanations to sessionStorage
+  try {
+    sessionStorage.setItem('explanations', JSON.stringify(explanations));
+  } catch (e) {
+    console.log('Could not save explanations to session');
+  }
+
+  updatePreview();
+
+  // Save current doc ID
+  if (isExtension) {
+    browser.storage.local.set({ currentDocId });
+  } else {
+    localStorage.setItem('currentDocId', currentDocId);
+  }
+}
+
+// Create new document
+async function createNewDocument() {
+  // Save current document if it has content
+  if (editor.value.trim() !== '') {
+    await saveCurrentDocument();
+  }
+
+  // Reset to new document
+  currentDocId = null;
+  editor.value = '';
+  docTitle.textContent = 'Untitled';
+  explanations = {};
+  sessionStorage.setItem('explanations', JSON.stringify(explanations));
+  updatePreview();
+
+  // Save state
+  if (isExtension) {
+    await browser.storage.local.set({ currentDocId: null });
+  } else {
+    localStorage.setItem('currentDocId', 'null');
+  }
+}
+
+// Render history list
+function renderHistoryList() {
+  historyList.innerHTML = '';
+
+  studyHistory.forEach(doc => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+
+    const info = document.createElement('div');
+    info.className = 'history-item-info';
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'history-item-title';
+    titleDiv.textContent = doc.title;
+
+    const meta = document.createElement('div');
+    meta.className = 'history-item-meta';
+
+    const date = new Date(doc.lastModified);
+    const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const charCount = doc.content.length;
+
+    const dateSpan = document.createElement('span');
+    dateSpan.textContent = dateStr;
+    const countSpan = document.createElement('span');
+    countSpan.textContent = `${charCount} chars`;
+    meta.appendChild(dateSpan);
+    meta.appendChild(countSpan);
+
+    info.appendChild(titleDiv);
+    info.appendChild(meta);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'history-item-delete';
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.onclick = async (e) => {
+      e.stopPropagation();
+      await deleteDocument(doc.id);
+    };
+
+    item.appendChild(info);
+    item.appendChild(deleteBtn);
+
+    item.onclick = () => {
+      loadDocument(doc);
+      historyModal.classList.remove('show');
+    };
+
+    historyList.appendChild(item);
+  });
+}
+
+// Delete document from history
+async function deleteDocument(docId) {
+  studyHistory = studyHistory.filter(d => d.id !== docId);
+
+  // If we deleted the current document, reset to new
+  if (currentDocId === docId) {
+    await createNewDocument();
+  }
+
+  // Save to storage
+  if (isExtension) {
+    await browser.storage.local.set({ studyHistory });
+  } else {
+    localStorage.setItem('studyHistory', JSON.stringify(studyHistory));
+  }
+
+  renderHistoryList();
 }
 
 const providers = {
@@ -364,7 +587,7 @@ function updatePreview() {
   let content = editor.value;
 
   // Parse markdown first
-  preview.innerHTML = marked.parse(content);
+  preview.innerHTML = DOMPurify.sanitize(marked.parse(content));
 
   // Then render LaTeX math
   renderMathInElement(preview, {
@@ -411,7 +634,7 @@ function updatePreview() {
 
       if (hasMatch) {
         const span = document.createElement('span');
-        span.innerHTML = text;
+        span.innerHTML = DOMPurify.sanitize(text, { ADD_ATTR: ['data-term'] });
         node.parentNode.replaceChild(span, node);
       }
     });
@@ -434,7 +657,7 @@ function updatePreview() {
 }
 
 function showTooltip(element, text) {
-  tooltip.innerHTML = marked.parse(text);
+  tooltip.innerHTML = DOMPurify.sanitize(marked.parse(text));
 
   // Render LaTeX in tooltip
   renderMathInElement(tooltip, {
@@ -458,9 +681,49 @@ editor.addEventListener('input', () => {
   autoSaveContent();
 });
 
-// Toggle editor
-toggleEditorBtn.addEventListener('click', () => {
-  editorWrapper.classList.toggle('hidden');
+// Layout mode state
+let currentLayoutMode = 'both';  // 'editor', 'both', or 'reader'
+
+// Layout mode switching
+const MODE_LABELS = { both: 'Both', reader: 'Reader', editor: 'Editor' };
+
+function setLayoutMode(mode) {
+  currentLayoutMode = mode;
+  toggleViewBtn.textContent = `Toggle view: ${MODE_LABELS[mode]}`;
+
+  if (mode === 'editor') {
+    editorWrapper.classList.remove('hidden');
+    previewWrapper.classList.add('hidden');
+    resizer.classList.add('hidden');
+  } else if (mode === 'both') {
+    editorWrapper.classList.remove('hidden');
+    previewWrapper.classList.remove('hidden');
+    resizer.classList.remove('hidden');
+  } else if (mode === 'reader') {
+    editorWrapper.classList.add('hidden');
+    previewWrapper.classList.remove('hidden');
+    resizer.classList.add('hidden');
+  }
+}
+
+// Cycle: both → reader → editor → both
+function cycleLayoutMode() {
+  const modes = ['both', 'reader', 'editor'];
+  const currentIndex = modes.indexOf(currentLayoutMode);
+  const nextIndex = (currentIndex + 1) % modes.length;
+  setLayoutMode(modes[nextIndex]);
+}
+
+toggleViewBtn.addEventListener('click', cycleLayoutMode);
+
+// Keyboard shortcut: Tab to cycle through layout modes
+document.addEventListener('keydown', (e) => {
+  // Tab key (only when not in an input/textarea/contenteditable)
+  if (e.key === 'Tab' &&
+      !e.target.matches('input, textarea, [contenteditable="true"]')) {
+    e.preventDefault();
+    cycleLayoutMode();
+  }
 });
 
 // Dark mode toggle
@@ -704,6 +967,42 @@ previewWrapper.addEventListener('scroll', () => {
   tooltip.style.display = 'none';
 });
 
+// New document button
+newDocBtn.addEventListener('click', async () => {
+  if (confirm('Create new document? (Current document will be saved)')) {
+    await createNewDocument();
+  }
+});
+
+// History modal
+historyBtn.addEventListener('click', () => {
+  renderHistoryList();
+  historyModal.classList.add('show');
+});
+
+closeHistory.addEventListener('click', () => {
+  historyModal.classList.remove('show');
+});
+
+historyModal.addEventListener('click', (e) => {
+  if (e.target === historyModal) {
+    historyModal.classList.remove('show');
+  }
+});
+
+// Document title editing
+docTitle.addEventListener('blur', async () => {
+  // Save when title is edited
+  await saveCurrentDocument();
+});
+
+docTitle.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    docTitle.blur();  // Trigger save
+  }
+});
+
 // Settings modal
 settingsBtn.addEventListener('click', () => {
   console.log('Settings clicked - current settings:', settings);
@@ -714,6 +1013,7 @@ settingsBtn.addEventListener('click', () => {
   modelSelect.value = settings.model || 'gemini-2.5-flash-lite';
   promptTemplate.value = settings.customPrompt || defaultPrompt;
   contextWindowSize.value = settings.contextWindowChars || 0;
+  spellcheckToggle.checked = !!settings.spellcheck;
   updateModelSelect();
   updatePriceInfo();
   settingsModal.classList.add('show');
@@ -753,60 +1053,45 @@ saveSettings.addEventListener('click', async () => {
   // Parse and validate context window size
   const contextSize = parseInt(contextWindowSize.value) || 0;
   settings.contextWindowChars = Math.min(Math.max(contextSize, 0), 1000); // Clamp between 0-1000
+  settings.spellcheck = spellcheckToggle.checked;
+  applySpellcheck();
 
   await saveSettingsToStorage();
   updateModelDisplay();
   settingsModal.classList.remove('show');
 });
 
-// Initial content
-const defaultContent = `# Study Reader + AI
+// Minimal welcome content for new users
+const welcomeContent = `# Welcome to Study Reader + AI
 
-## Quick Start
+Paste your study material here and use AI to explain any concept instantly.
 
-**Copy and paste your study material here** — articles, notes, papers, or any text you want to understand better.
+## Quick Tips
 
-## How It Works
+- **Select text** in the preview → Click "Explain"
+- **Tab**: Cycle layout modes (Editor / Both / Reader)
+- **History**: Access your last 20 documents
+- **Settings**: Configure AI provider and API key
 
-1. **Paste your content** in this editor (left side)
-2. **Select any text** in the preview (right side)
-3. **Click "Explain"** to get AI-powered explanations
-4. **Hover over highlighted terms** to review explanations
-
-## Features
-
-- **Focus Mode**: Click the 📝 button to hide this editor
-- **Dark Mode**: Toggle the switch in the top right
-- **AI Providers**: Click ⚙️ to choose between Gemini, OpenAI, Claude, or xAI
-- **Custom Prompts**: Modify how explanations are generated
-
-## Example Text to Try
-
-The mitochondria is the powerhouse of the cell, responsible for producing ATP through cellular respiration. This process involves glycolysis, the Krebs cycle, and the electron transport chain.
-
-## Math Support
-
-Supports LaTeX equations: $E = mc^2$ and $$\\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$
-
----
-
-**Start by pasting your study material here!**`;
+Start typing or paste your content here...`;
 
 // Initialize on load
 async function initialize() {
   await loadSettings();
 
-  // Load dark mode preference
-  let darkMode = false;
+  // Load dark mode preference — fall back to system preference if unset
+  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  let darkMode = systemPrefersDark;
   if (isExtension) {
     try {
       const stored = await browser.storage.local.get('darkMode');
-      darkMode = stored.darkMode === true;
+      if (typeof stored.darkMode === 'boolean') darkMode = stored.darkMode;
     } catch (e) {
       console.log('Error loading dark mode:', e);
     }
   } else {
-    darkMode = localStorage.getItem('darkMode') === 'true';
+    const saved = localStorage.getItem('darkMode');
+    if (saved === 'true' || saved === 'false') darkMode = saved === 'true';
   }
 
   if (darkMode) {
@@ -814,9 +1099,13 @@ async function initialize() {
     darkModeToggle.classList.add('active');
   }
 
-  // Set default content if empty
-  if (!editor.value) {
-    editor.value = defaultContent;
+  // Show welcome content only for first-time users (no history and empty editor)
+  if (!editor.value && studyHistory.length === 0) {
+    editor.value = welcomeContent;
+    docTitle.textContent = 'Welcome';
+  } else if (!editor.value) {
+    // Returning user with history but no current doc - show empty
+    docTitle.textContent = 'Untitled';
   }
 
   updateModelSelect();
